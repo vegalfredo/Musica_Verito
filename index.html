@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Verito Mayor">
+<link rel="manifest" href="./manifest.json">
+<title>🎭 Audios Obras Verito Mayor</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: rgba(255,255,255,0.07);
+    --amarillo: #f5c518;
+    --morado: #9b59b6;
+    --rosa: #e91e8c;
+    --rojo: #e74c3c;
+    --azul: #3498db;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: #fff; font-family: 'Crimson Text', serif; min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 20%, rgba(245,197,24,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(231,76,60,0.04) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,15,0.97); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border); padding: 12px 16px 8px; text-align: center;
+  }
+  header h1 {
+    font-family: 'Cinzel', serif; font-size: clamp(1.1rem, 4.5vw, 1.6rem);
+    font-weight: 900; letter-spacing: 0.18em;
+    background: linear-gradient(135deg, #f5c518 0%, #e91e8c 50%, #9b59b6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    text-transform: uppercase;
+  }
+
+  #mini-player { display: none; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; margin: 10px 0 0; padding: 8px 12px; }
+  #mini-player.visible { display: block; }
+  #now-playing-label { font-size: 0.68rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+  #now-playing-title { font-family: 'Cinzel', serif; font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
+  .player-controls { display: flex; align-items: center; gap: 8px; }
+  #progress-bar-container { flex: 1; height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; cursor: pointer; }
+  #progress-bar-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 0.4s linear; }
+  .time-label { font-size: 0.68rem; color: rgba(255,255,255,0.45); min-width: 30px; text-align: center; font-variant-numeric: tabular-nums; }
+  #volume-container { display: flex; align-items: center; gap: 5px; }
+  #volume-icon { font-size: 0.85rem; cursor: pointer; user-select: none; }
+  #volume-slider { -webkit-appearance: none; width: 65px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); outline: none; cursor: pointer; }
+  #volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #fff; cursor: pointer; }
+
+  main { position: relative; z-index: 1; padding: 14px 12px 90px; display: flex; flex-direction: column; gap: 16px; }
+
+  .obra-group { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); animation: fadeUp 0.35s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  .obra-group:nth-child(1) { animation-delay: 0.05s; }
+  .obra-group:nth-child(2) { animation-delay: 0.10s; }
+  .obra-group:nth-child(3) { animation-delay: 0.15s; }
+  .obra-group:nth-child(4) { animation-delay: 0.20s; }
+  .obra-group:nth-child(5) { animation-delay: 0.25s; }
+
+  .obra-header { padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+  .obra-icon { font-size: 1.2rem; }
+  .obra-title { font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+  .obra-count { margin-left: auto; font-size: 0.68rem; opacity: 0.55; }
+
+  .tracks-grid { display: flex; flex-direction: column; gap: 1px; background: rgba(0,0,0,0.4); }
+  .track-btn {
+    width: 100%; min-height: 62px; border: none; cursor: pointer;
+    display: flex; align-items: center; gap: 12px; padding: 11px 16px;
+    text-align: left; transition: background 0.15s ease, transform 0.1s ease;
+    position: relative; overflow: hidden; background: var(--surface); border-left: 3px solid transparent;
+  }
+  .track-btn:hover { filter: brightness(1.15); }
+  .track-btn:active { transform: scale(0.98); }
+  .track-btn.placeholder { opacity: 0.3; cursor: default; pointer-events: none; }
+  .track-number { font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 700; min-width: 26px; text-align: center; opacity: 0.55; }
+  .track-info { flex: 1; min-width: 0; }
+  .track-name { font-family: 'Cinzel', serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.03em; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+  .track-file { font-size: 0.68rem; margin-top: 2px; opacity: 0.45; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-play-icon { font-size: 1.3rem; min-width: 30px; text-align: center; transition: transform 0.2s; flex-shrink: 0; }
+  .track-btn.playing .track-play-icon { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+  .track-progress { position: absolute; bottom: 0; left: 0; height: 3px; width: 0%; transition: width 0.4s linear; }
+
+  /* COLORES */
+  .grupo-amarillo.obra-group        { border-color: rgba(245,197,24,0.25); }
+  .grupo-amarillo .obra-header      { background: linear-gradient(135deg,#3a2d00,#1c1500); border-bottom: 1px solid rgba(245,197,24,0.15); }
+  .grupo-amarillo .obra-title       { color: var(--amarillo); }
+  .grupo-amarillo .track-btn.playing{ background: rgba(245,197,24,0.1); border-left-color: var(--amarillo); }
+  .grupo-amarillo .track-number     { color: var(--amarillo); }
+  .grupo-amarillo .track-play-icon  { color: var(--amarillo); }
+  .grupo-amarillo .track-progress   { background: var(--amarillo); }
+
+  .grupo-morado.obra-group          { border-color: rgba(155,89,182,0.25); }
+  .grupo-morado .obra-header        { background: linear-gradient(135deg,#280b38,#160720); border-bottom: 1px solid rgba(155,89,182,0.15); }
+  .grupo-morado .obra-title         { color: var(--morado); }
+  .grupo-morado .track-btn.playing  { background: rgba(155,89,182,0.1); border-left-color: var(--morado); }
+  .grupo-morado .track-number       { color: var(--morado); }
+  .grupo-morado .track-play-icon    { color: var(--morado); }
+  .grupo-morado .track-progress     { background: var(--morado); }
+
+  .grupo-rosa.obra-group            { border-color: rgba(233,30,140,0.25); }
+  .grupo-rosa .obra-header          { background: linear-gradient(135deg,#38091f,#1e0410); border-bottom: 1px solid rgba(233,30,140,0.15); }
+  .grupo-rosa .obra-title           { color: var(--rosa); }
+  .grupo-rosa .track-btn.playing    { background: rgba(233,30,140,0.1); border-left-color: var(--rosa); }
+  .grupo-rosa .track-number         { color: var(--rosa); }
+  .grupo-rosa .track-play-icon      { color: var(--rosa); }
+  .grupo-rosa .track-progress       { background: var(--rosa); }
+
+  .grupo-rojo.obra-group            { border-color: rgba(231,76,60,0.25); }
+  .grupo-rojo .obra-header          { background: linear-gradient(135deg,#380808,#1e0404); border-bottom: 1px solid rgba(231,76,60,0.15); }
+  .grupo-rojo .obra-title           { color: var(--rojo); }
+  .grupo-rojo .track-btn.playing    { background: rgba(231,76,60,0.1); border-left-color: var(--rojo); }
+  .grupo-rojo .track-number         { color: var(--rojo); }
+  .grupo-rojo .track-play-icon      { color: var(--rojo); }
+  .grupo-rojo .track-progress       { background: var(--rojo); }
+
+  .grupo-azul.obra-group            { border-color: rgba(52,152,219,0.25); }
+  .grupo-azul .obra-header          { background: linear-gradient(135deg,#082438,#04121e); border-bottom: 1px solid rgba(52,152,219,0.15); }
+  .grupo-azul .obra-title           { color: var(--azul); }
+  .grupo-azul .track-btn.playing    { background: rgba(52,152,219,0.1); border-left-color: var(--azul); }
+  .grupo-azul .track-number         { color: var(--azul); }
+  .grupo-azul .track-play-icon      { color: var(--azul); }
+  .grupo-azul .track-progress       { background: var(--azul); }
+
+  .footer-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(10,10,15,0.97); border-top: 1px solid var(--border);
+    padding: 8px 14px 14px; display: flex; align-items: center; gap: 10px;
+    z-index: 200; backdrop-filter: blur(12px);
+  }
+  #stop-btn {
+    background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.35); color: #e74c3c;
+    border-radius: 10px; padding: 9px 14px; font-family: 'Cinzel', serif; font-size: 0.7rem;
+    font-weight: 700; letter-spacing: 0.08em; cursor: pointer; transition: all 0.18s; white-space: nowrap; flex-shrink: 0;
+  }
+  #stop-btn:active { background: rgba(231,76,60,0.3); transform: scale(0.95); }
+  #footer-info { font-size: 0.75rem; color: rgba(255,255,255,0.35); font-style: italic; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #install-btn {
+    display: none; background: rgba(52,152,219,0.15); border: 1px solid rgba(52,152,219,0.3);
+    color: var(--azul); border-radius: 10px; padding: 9px 12px; font-family: 'Cinzel', serif;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; cursor: pointer; transition: all 0.18s; white-space: nowrap; flex-shrink: 0;
+  }
+  #install-btn.visible { display: block; }
+
+  #toast {
+    position: fixed; bottom: 72px; left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: #1c1c2e; border: 1px solid rgba(255,255,255,0.12); color: #fff;
+    padding: 9px 20px; border-radius: 20px; font-size: 0.82rem;
+    opacity: 0; transition: all 0.3s ease; z-index: 300; pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎭 Audios Obras Verito Mayor</h1>
+  <div id="mini-player">
+    <div id="now-playing-label">♪ Reproduciendo</div>
+    <div id="now-playing-title">—</div>
+    <div class="player-controls">
+      <span class="time-label" id="time-current">0:00</span>
+      <div id="progress-bar-container"><div id="progress-bar-fill"></div></div>
+      <span class="time-label" id="time-total">0:00</span>
+      <div id="volume-container">
+        <span id="volume-icon">🔊</span>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="1">
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<div class="footer-bar">
+  <button id="stop-btn">⏹ DETENER</button>
+  <div id="footer-info">Sin reproducción</div>
+  <button id="install-btn">📲 Instalar</button>
+</div>
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  BASE_URL — apunta a GitHub Pages (mismo dominio que el SW)
+//  IMPORTANTE: los audios se sirven desde la misma URL que la app,
+//  así el Service Worker puede cachearlos correctamente.
+// ════════════════════════════════════════════════════════════════
+const BASE_URL = './';   // relativo a index.html en GitHub Pages
+
+const OBRAS = [
+  {
+    id: 'verito', titulo: 'Audios Obras Verito Mayor', icono: '🎭', color: 'amarillo',
+    tracks: [
+      { nombre: 'Aplausos y Gritos',       archivo: 'APLAUSOS Y GRITOS  OVACIÓN  PÚBLICO.mp3' },
+      { nombre: 'Rayos y Truenos',         archivo: 'RAYOS Y TRUENOS   efectos de sonido.mp3' },
+      { nombre: 'Pasos de Gigante',        archivo: 'Sonido de Pasos de un Gigante   Efecto de Sonido.mp3' },
+      { nombre: 'Alarma Nuclear',          archivo: 'Tono de Alarma Nuclear para movil.mp3' },
+      { nombre: 'Universal Centennial',    archivo: 'Universal Centennial Logo.mp3' },
+    ]
+  }
+];
+
+// ── ESTADO ───────────────────────────────────────────────────────
+let currentAudio = null;
+let currentBtn   = null;
+let progressInt  = null;
+
+// ── RENDER ───────────────────────────────────────────────────────
+const app = document.getElementById('app');
+OBRAS.forEach(obra => {
+  const group = document.createElement('div');
+  group.className = `obra-group grupo-${obra.color}`;
+  group.innerHTML = `
+    <div class="obra-header">
+      <span class="obra-icon">${obra.icono}</span>
+      <span class="obra-title">${obra.titulo}</span>
+      <span class="obra-count">${obra.tracks.filter(t=>t.archivo).length} tracks</span>
+    </div>
+    <div class="tracks-grid" id="grid-${obra.id}"></div>
+  `;
+  app.appendChild(group);
+
+  const grid = document.getElementById(`grid-${obra.id}`);
+  obra.tracks.forEach((track, idx) => {
+    const btn = document.createElement('button');
+    btn.className = `track-btn${!track.archivo ? ' placeholder' : ''}`;
+    btn.innerHTML = `
+      <span class="track-number">${String(idx+1).padStart(2,'0')}</span>
+      <div class="track-info">
+        <div class="track-name">${track.nombre}</div>
+        <div class="track-file">${track.archivo || '— pendiente —'}</div>
+      </div>
+      <span class="track-play-icon">▶</span>
+      <div class="track-progress"></div>
+    `;
+    if (track.archivo) btn.addEventListener('click', () => handleTrack(btn, track, obra));
+    grid.appendChild(btn);
+  });
+});
+
+// ── AUDIO ────────────────────────────────────────────────────────
+function handleTrack(btn, track, obra) {
+  if (currentBtn === btn && currentAudio) {
+    if (currentAudio.paused) {
+      currentAudio.play();
+      setIcon(btn, '⏸'); setFooter(`▶ ${track.nombre}`);
+    } else {
+      currentAudio.pause();
+      setIcon(btn, '▶'); setFooter(`⏸ ${track.nombre}`);
+    }
+    return;
+  }
+  stopCurrent();
+
+  // URL relativa — misma que usa el SW para cachear
+  const url = BASE_URL + encodeURIComponent(track.archivo);
+  const audio = new Audio(url);
+  audio.volume = parseFloat(document.getElementById('volume-slider').value);
+  currentAudio = audio;
+  currentBtn   = btn;
+
+  btn.classList.add('playing');
+  setIcon(btn, '⏸');
+  document.getElementById('mini-player').classList.add('visible');
+  document.getElementById('now-playing-title').textContent = `${obra.icono} ${track.nombre}`;
+
+  const colorMap = { amarillo:'#f5c518', morado:'#9b59b6', rosa:'#e91e8c', rojo:'#e74c3c', azul:'#3498db' };
+  document.getElementById('progress-bar-fill').style.background = colorMap[obra.color];
+  setFooter(`▶ ${obra.titulo} — ${track.nombre}`);
+
+  audio.addEventListener('loadedmetadata', () => {
+    document.getElementById('time-total').textContent = fmt(audio.duration);
+  });
+
+  progressInt = setInterval(() => {
+    if (audio.duration && !audio.paused) {
+      const p = (audio.currentTime / audio.duration) * 100;
+      document.getElementById('progress-bar-fill').style.width = p + '%';
+      btn.querySelector('.track-progress').style.width = p + '%';
+      document.getElementById('time-current').textContent = fmt(audio.currentTime);
+    }
+  }, 500);
+
+  audio.addEventListener('ended', () => {
+    resetBtn(btn);
+    document.getElementById('mini-player').classList.remove('visible');
+    setFooter('Sin reproducción');
+    clearInterval(progressInt);
+    currentAudio = null; currentBtn = null;
+  });
+
+  audio.play().catch(() => {
+    toast('❌ No se pudo cargar el audio');
+    resetBtn(btn); currentAudio = null; currentBtn = null;
+  });
+}
+
+function stopCurrent() {
+  if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+  if (currentBtn)   { resetBtn(currentBtn); }
+  clearInterval(progressInt);
+  document.getElementById('progress-bar-fill').style.width = '0%';
+  document.getElementById('time-current').textContent = '0:00';
+  document.getElementById('mini-player').classList.remove('visible');
+  currentAudio = null; currentBtn = null;
+}
+function resetBtn(btn) {
+  btn.classList.remove('playing');
+  setIcon(btn, '▶');
+  btn.querySelector('.track-progress').style.width = '0%';
+}
+function setIcon(btn, i) { btn.querySelector('.track-play-icon').textContent = i; }
+
+document.getElementById('stop-btn').addEventListener('click', () => { stopCurrent(); setFooter('Sin reproducción'); });
+document.getElementById('progress-bar-container').addEventListener('click', e => {
+  if (!currentAudio || !currentAudio.duration) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  currentAudio.currentTime = ((e.clientX - r.left) / r.width) * currentAudio.duration;
+});
+document.getElementById('volume-slider').addEventListener('input', e => {
+  if (currentAudio) currentAudio.volume = e.target.value;
+  const v = parseFloat(e.target.value);
+  document.getElementById('volume-icon').textContent = v > 0.5 ? '🔊' : v > 0 ? '🔉' : '🔇';
+});
+
+function fmt(s) { if (!s||isNaN(s)) return '0:00'; return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
+function setFooter(t) { document.getElementById('footer-info').textContent = t; }
+function toast(msg, ms=3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ── PWA ──────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => {
+        console.log('SW registrado:', reg.scope);
+        toast('✅ App lista para usar sin conexión', 4000);
+      })
+      .catch(err => console.warn('SW error:', err));
+  });
+
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data.type === 'CACHE_PROGRESS') {
+      const pct = Math.round((e.data.cargados / e.data.total) * 100);
+      setFooter(`⏳ Descargando audios... ${pct}% (${e.data.cargados}/${e.data.total})`);
+    }
+    if (e.data.type === 'CACHE_COMPLETE') {
+      setFooter('Sin reproducción');
+      toast(`✅ ${e.data.total} audios listos sin conexión`, 5000);
+    }
+  });
+}
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('install-btn').classList.add('visible');
+});
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('install-btn').classList.remove('visible');
+  deferredPrompt = null;
+});
+window.addEventListener('appinstalled', () => toast('🎭 App instalada correctamente'));
+</script>
+</body>
+</html>

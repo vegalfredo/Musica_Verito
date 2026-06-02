@@ -1,0 +1,11 @@
+{
+  "name": "Audios Obras Verito Mayor",
+  "short_name": "Verito Mayor",
+  "description": "Tablero de audios para obras de teatro de Verito Mayor",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "lang": "es"
+}
